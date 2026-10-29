@@ -12,9 +12,40 @@
   <style>
     body { font-family: 'Zen Maru Gothic', 'Fredoka', sans-serif; }
     .font-num { font-family: 'Fredoka', 'Zen Maru Gothic', sans-serif; }
+    .scanline {
+      background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.25) 51%);
+      background-size: 100% 4px;
+    }
   </style>
 </head>
-<body class="bg-[#050b14] text-slate-100 min-h-screen flex flex-col select-none overflow-x-hidden">
+<body class="bg-[#050b14] text-slate-100 min-h-screen flex flex-col select-none overflow-x-hidden scanline">
+
+  <!-- 3D 展間入場密碼鎖屏 (Lockout Gate) -->
+  <div id="securityGateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#050b14]/95 backdrop-blur-md">
+    <div class="bg-[#1c1308] border-2 border-amber-400 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-[0_0_60px_rgba(245,158,11,0.3)] text-center flex flex-col items-center">
+      <div class="w-16 h-16 rounded-2xl bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-300 text-3xl mb-4 animate-pulse">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <span class="text-xs font-num font-bold text-amber-300 tracking-widest uppercase bg-amber-950 px-3 py-1 rounded-full border border-amber-500/40">SECURITY ACCESS // LAB 03</span>
+      <h2 class="text-xl md:text-2xl font-black text-white mt-2">請輸入 3D 展間入場密碼</h2>
+      <p class="text-xs md:text-sm text-slate-300 font-bold mt-2 leading-relaxed">
+        材料掃描檢驗儀已鎖定。請前往 3D 展間查詢材料檢測機台編號！
+      </p>
+
+      <div class="w-full mt-5">
+        <input type="text" id="gatePasscodeInput" placeholder="請輸入 4 位數密碼 (如 3099)" class="w-full text-center bg-slate-900 border-2 border-slate-700 rounded-2xl px-4 py-3 text-lg font-num font-black text-amber-300 focus:border-amber-400 outline-none uppercase tracking-widest shadow-inner">
+      </div>
+
+      <button onclick="verifyGatePasscode()" class="mt-4 w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-900 font-black rounded-2xl text-base shadow-lg transition-all flex items-center justify-center gap-2">
+        <i class="fa-solid fa-unlock-keyhole"></i> 解鎖材料掃描台
+      </button>
+
+      <div class="mt-3 text-[11px] text-slate-500 font-bold">
+        提示：密碼為機台測試編號 (預設代碼：<span class="font-num text-slate-400">3099</span>)
+      </div>
+    </div>
+  </div>
+
   <header class="border-b-2 border-amber-800/60 bg-[#081220]/90 backdrop-blur px-6 py-4 flex items-center justify-between shadow-lg">
     <div class="flex items-center gap-3">
       <div class="w-4 h-4 rounded-full bg-amber-400 animate-ping"></div>
@@ -44,17 +75,14 @@
       </button>
     </div>
 
-    <!-- 測試電路台 -->
     <div class="relative w-full h-[360px] bg-[#070e1c] border-2 border-amber-900/70 rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center p-6">
       <div class="relative z-10 flex items-center justify-between w-full max-w-3xl">
-        <!-- 電池 -->
         <div class="bg-slate-900/90 border-2 border-slate-700 rounded-2xl p-5 flex flex-col items-center shadow-xl">
           <div class="text-amber-400 text-4xl mb-1"><i class="fa-solid fa-car-battery"></i></div>
           <div class="text-base font-black text-white">9V 直流電源</div>
           <div class="text-xs font-bold font-num text-emerald-400 mt-1 bg-emerald-950/70 px-2 py-0.5 rounded-full">POWER ON</div>
         </div>
 
-        <!-- 放置槽 -->
         <div id="testDock" onclick="dockClicked()" class="w-64 h-40 rounded-3xl border-4 border-dashed border-amber-500/70 bg-amber-950/20 hover:bg-amber-950/40 transition-all flex flex-col items-center justify-center cursor-pointer p-4 text-center">
           <div id="dockPlaceholder">
             <i class="fa-solid fa-plus-circle text-amber-400 text-3xl mb-1 animate-pulse"></i>
@@ -67,7 +95,6 @@
           </div>
         </div>
 
-        <!-- 燈泡 -->
         <div class="bg-slate-900/90 border-2 border-slate-700 rounded-2xl p-5 flex flex-col items-center shadow-xl">
           <div id="bulbIcon" class="text-slate-600 text-4xl mb-1 transition-all duration-300"><i class="fa-solid fa-lightbulb"></i></div>
           <div class="text-base font-black text-white">檢驗燈泡</div>
@@ -76,7 +103,6 @@
       </div>
     </div>
 
-    <!-- 6 種材料卡片 -->
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
       <button onclick="testItem('spoon')" class="p-4 rounded-2xl bg-slate-900/90 border-2 border-slate-700 hover:border-amber-400 flex flex-col items-center gap-2 transition-all shadow hover:scale-105">
         <span class="text-4xl">🥄</span>
@@ -104,7 +130,6 @@
       </button>
     </div>
 
-    <!-- 探究題目 -->
     <div id="quizSection" class="bg-[#0c182c] border-2 border-amber-500/60 rounded-3xl p-6 shadow-2xl">
       <div class="flex items-center gap-2 text-amber-300 font-bold text-sm tracking-wider mb-2">
         <i class="fa-solid fa-lightbulb text-yellow-300 text-lg"></i> 微觀歸納題 // 為什麼能通電？
@@ -162,6 +187,37 @@
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
     }
+
+    // 3D 展間入場密碼驗證
+    const REQUIRED_PASSCODE = "3099";
+
+    function checkGatePasscode() {
+      if (sessionStorage.getItem('lab03_unlocked') === 'true') {
+        document.getElementById('securityGateModal').classList.add('hidden');
+      }
+    }
+    checkGatePasscode();
+
+    function verifyGatePasscode() {
+      const input = document.getElementById('gatePasscodeInput').value.trim().toUpperCase();
+      if (input === REQUIRED_PASSCODE || input === "SCAN-3099") {
+        playTone(523, 'sine', 0.1);
+        setTimeout(() => playTone(659, 'sine', 0.15), 100);
+        setTimeout(() => playTone(784, 'sine', 0.25), 200);
+        sessionStorage.setItem('lab03_unlocked', 'true');
+        document.getElementById('securityGateModal').classList.add('opacity-0', 'transition-opacity', 'duration-500');
+        setTimeout(() => {
+          document.getElementById('securityGateModal').classList.add('hidden');
+        }, 500);
+      } else {
+        playTone(180, 'sawtooth', 0.25);
+        alert('❌ 密碼錯誤！請先在 3D 展間查詢材料檢測機台編號。');
+      }
+    }
+
+    document.getElementById('gatePasscodeInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') verifyGatePasscode();
+    });
 
     const items = {
       spoon: { name: '金屬湯匙', icon: '🥄', isConductor: true },
