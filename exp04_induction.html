@@ -12,9 +12,40 @@
   <style>
     body { font-family: 'Zen Maru Gothic', 'Fredoka', sans-serif; }
     .font-num { font-family: 'Fredoka', 'Zen Maru Gothic', sans-serif; }
+    .scanline {
+      background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.25) 51%);
+      background-size: 100% 4px;
+    }
   </style>
 </head>
-<body class="bg-[#050b14] text-slate-100 min-h-screen flex flex-col select-none overflow-x-hidden">
+<body class="bg-[#050b14] text-slate-100 min-h-screen flex flex-col select-none overflow-x-hidden scanline">
+
+  <!-- 3D 展間入場密碼鎖屏 (Lockout Gate) -->
+  <div id="securityGateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#050b14]/95 backdrop-blur-md">
+    <div class="bg-[#091a18] border-2 border-emerald-400 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-[0_0_60px_rgba(16,185,129,0.3)] text-center flex flex-col items-center">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-300 text-3xl mb-4 animate-pulse">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <span class="text-xs font-num font-bold text-emerald-300 tracking-widest uppercase bg-emerald-950 px-3 py-1 rounded-full border border-emerald-500/40">SECURITY ACCESS // LAB 04</span>
+      <h2 class="text-xl md:text-2xl font-black text-white mt-2">請輸入 3D 展間入場密碼</h2>
+      <p class="text-xs md:text-sm text-slate-300 font-bold mt-2 leading-relaxed">
+        感應核心電源處於防護鎖定中。請先在 3D 展間尋找「避雷針與感應裝置」周邊的 4 位數驗證碼！
+      </p>
+
+      <div class="w-full mt-5">
+        <input type="text" id="gatePasscodeInput" placeholder="請輸入 4 位數密碼 (如 7714)" class="w-full text-center bg-slate-900 border-2 border-slate-700 rounded-2xl px-4 py-3 text-lg font-num font-black text-emerald-300 focus:border-emerald-400 outline-none uppercase tracking-widest shadow-inner">
+      </div>
+
+      <button onclick="verifyGatePasscode()" class="mt-4 w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-900 font-black rounded-2xl text-base shadow-lg transition-all flex items-center justify-center gap-2">
+        <i class="fa-solid fa-unlock-keyhole"></i> 解鎖靜電感應實驗台
+      </button>
+
+      <div class="mt-3 text-[11px] text-slate-500 font-bold">
+        提示：密碼為感應核心序列號 (預設代碼：<span class="font-num text-slate-400">7714</span>)
+      </div>
+    </div>
+  </div>
+
   <header class="border-b-2 border-emerald-800/60 bg-[#081220]/90 backdrop-blur px-6 py-4 flex items-center justify-between shadow-lg">
     <div class="flex items-center gap-3">
       <div class="w-4 h-4 rounded-full bg-emerald-400 animate-ping"></div>
@@ -47,7 +78,6 @@
       </div>
     </div>
 
-    <!-- 舞台畫布 -->
     <div class="relative w-full h-[400px] md:h-[460px] bg-[#070e1c] border-2 border-emerald-900/70 rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center" id="containerArea">
       <canvas id="inductionCanvas" class="absolute inset-0"></canvas>
       <div class="absolute bottom-5 left-6 bg-slate-900/90 backdrop-blur border-2 border-slate-700 rounded-2xl p-4 text-sm font-bold text-slate-200 pointer-events-none shadow-lg">
@@ -62,7 +92,6 @@
       </div>
     </div>
 
-    <!-- 探究題目 -->
     <div id="quizSection" class="bg-[#0c182c] border-2 border-emerald-500/60 rounded-3xl p-6 shadow-2xl">
       <div class="flex items-center gap-2 text-emerald-300 font-bold text-sm tracking-wider mb-2">
         <i class="fa-solid fa-lightbulb text-yellow-300 text-lg"></i> 觀察思考題 // 電荷的搬家日記
@@ -120,6 +149,37 @@
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
     }
+
+    // 3D 展間入場密碼驗證
+    const REQUIRED_PASSCODE = "7714";
+
+    function checkGatePasscode() {
+      if (sessionStorage.getItem('lab04_unlocked') === 'true') {
+        document.getElementById('securityGateModal').classList.add('hidden');
+      }
+    }
+    checkGatePasscode();
+
+    function verifyGatePasscode() {
+      const input = document.getElementById('gatePasscodeInput').value.trim().toUpperCase();
+      if (input === REQUIRED_PASSCODE || input === "CORE-7714") {
+        playTone(523, 'sine', 0.1);
+        setTimeout(() => playTone(659, 'sine', 0.15), 100);
+        setTimeout(() => playTone(784, 'sine', 0.25), 200);
+        sessionStorage.setItem('lab04_unlocked', 'true');
+        document.getElementById('securityGateModal').classList.add('opacity-0', 'transition-opacity', 'duration-500');
+        setTimeout(() => {
+          document.getElementById('securityGateModal').classList.add('hidden');
+        }, 500);
+      } else {
+        playTone(180, 'sawtooth', 0.25);
+        alert('❌ 密碼錯誤！請先在 3D 展間尋找避雷針與感應裝置旁的驗證代碼。');
+      }
+    }
+
+    document.getElementById('gatePasscodeInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') verifyGatePasscode();
+    });
 
     const canvas = document.getElementById('inductionCanvas');
     const ctx = canvas.getContext('2d');
@@ -180,7 +240,6 @@
       const rodWidth = 150;
       const rodHeight = 44;
 
-      // 電棒
       ctx.save();
       ctx.fillStyle = rodIsNegative ? '#0891b2' : '#e11d48';
       ctx.shadowColor = rodIsNegative ? '#06b6d4' : '#f43f5e';
@@ -200,7 +259,6 @@
       const signs = rodIsNegative ? '−  −  −  −' : '+  +  +  +';
       ctx.fillText(signs, rodX + rodWidth / 2, rodY + rodHeight / 2);
 
-      // 金屬球
       ctx.save();
       ctx.beginPath();
       ctx.arc(sphereCenter.x, sphereCenter.y, sphereRadius, 0, Math.PI * 2);
@@ -214,7 +272,6 @@
       const shiftDirection = rodIsNegative ? 1 : -1;
       const maxShift = 70 * approachPct;
 
-      // 固定質子 (紅 +)
       nuclei.forEach(n => {
         ctx.fillStyle = '#f43f5e';
         ctx.font = 'bold 16px Fredoka, sans-serif';
@@ -223,7 +280,6 @@
         ctx.fillText('+', sphereCenter.x + n.x, sphereCenter.y + n.y);
       });
 
-      // 自由電子 (藍 -)
       electrons.forEach(e => {
         const targetX = e.baseX + shiftDirection * maxShift;
         e.x += (targetX - e.x) * 0.1;
@@ -234,7 +290,6 @@
         ctx.fillText('−', sphereCenter.x + e.x, sphereCenter.y + e.y);
       });
 
-      // 更新近遠端狀態
       const near = document.getElementById('nearStatus');
       const far = document.getElementById('farStatus');
       if (approachPct > 0.3) {
