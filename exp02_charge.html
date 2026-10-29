@@ -12,9 +12,40 @@
   <style>
     body { font-family: 'Zen Maru Gothic', 'Fredoka', sans-serif; }
     .font-num { font-family: 'Fredoka', 'Zen Maru Gothic', sans-serif; }
+    .scanline {
+      background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.25) 51%);
+      background-size: 100% 4px;
+    }
   </style>
 </head>
-<body class="bg-[#050b14] text-slate-100 min-h-screen flex flex-col select-none overflow-x-hidden">
+<body class="bg-[#050b14] text-slate-100 min-h-screen flex flex-col select-none overflow-x-hidden scanline">
+
+  <!-- 3D 展間入場密碼鎖屏 (Lockout Gate) -->
+  <div id="securityGateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#050b14]/95 backdrop-blur-md">
+    <div class="bg-[#0f0e24] border-2 border-violet-400 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-[0_0_60px_rgba(167,139,250,0.3)] text-center flex flex-col items-center">
+      <div class="w-16 h-16 rounded-2xl bg-violet-500/20 border-2 border-violet-400 flex items-center justify-center text-violet-300 text-3xl mb-4 animate-pulse">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <span class="text-xs font-num font-bold text-violet-300 tracking-widest uppercase bg-violet-950 px-3 py-1 rounded-full border border-violet-500/40">SECURITY ACCESS // LAB 02</span>
+      <h2 class="text-xl md:text-2xl font-black text-white mt-2">請輸入 3D 展間入場密碼</h2>
+      <p class="text-xs md:text-sm text-slate-300 font-bold mt-2 leading-relaxed">
+        庫侖力場感測器已鎖定。請在 3D 展間內尋找「電荷反應裝置警語」下方的解鎖序列號！
+      </p>
+
+      <div class="w-full mt-5">
+        <input type="text" id="gatePasscodeInput" placeholder="請輸入 4 位數密碼 (如 8820)" class="w-full text-center bg-slate-900 border-2 border-slate-700 rounded-2xl px-4 py-3 text-lg font-num font-black text-violet-300 focus:border-violet-400 outline-none uppercase tracking-widest shadow-inner">
+      </div>
+
+      <button onclick="verifyGatePasscode()" class="mt-4 w-full py-3.5 bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-400 hover:to-indigo-500 text-white font-black rounded-2xl text-base shadow-lg transition-all flex items-center justify-center gap-2">
+        <i class="fa-solid fa-unlock-keyhole"></i> 解鎖庫侖作用力觀測台
+      </button>
+
+      <div class="mt-3 text-[11px] text-slate-500 font-bold">
+        提示：密碼為機台警語代碼 (預設代碼：<span class="font-num text-slate-400">8820</span>)
+      </div>
+    </div>
+  </div>
+
   <header class="border-b-2 border-violet-800/60 bg-[#081220]/90 backdrop-blur px-6 py-4 flex items-center justify-between shadow-lg">
     <div class="flex items-center gap-3">
       <div class="w-4 h-4 rounded-full bg-violet-400 animate-ping"></div>
@@ -55,7 +86,6 @@
       </div>
     </div>
 
-    <!-- 舞台畫布 -->
     <div class="relative w-full h-[420px] md:h-[480px] bg-[#070e1c] border-2 border-violet-900/70 rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center" id="canvasContainer">
       <canvas id="coulombCanvas" class="absolute inset-0 cursor-grab active:cursor-grabbing"></canvas>
       <div class="absolute bottom-5 left-5 bg-slate-900/90 backdrop-blur border-2 border-slate-700 rounded-2xl p-4 text-sm font-bold text-slate-200 pointer-events-none shadow-lg">
@@ -71,7 +101,6 @@
       </div>
     </div>
 
-    <!-- 探究題目 -->
     <div id="quizSection" class="bg-[#0c182c] border-2 border-violet-500/60 rounded-3xl p-6 shadow-2xl">
       <div class="flex items-center gap-2 text-violet-300 font-bold text-sm tracking-wider mb-2">
         <i class="fa-solid fa-lightbulb text-yellow-300 text-lg"></i> 規律歸納題 // 電荷的悄悄話
@@ -139,6 +168,37 @@
       osc.stop(audioCtx.currentTime + 0.2);
     }
 
+    // 3D 展間入場密碼驗證
+    const REQUIRED_PASSCODE = "8820";
+
+    function checkGatePasscode() {
+      if (sessionStorage.getItem('lab02_unlocked') === 'true') {
+        document.getElementById('securityGateModal').classList.add('hidden');
+      }
+    }
+    checkGatePasscode();
+
+    function verifyGatePasscode() {
+      const input = document.getElementById('gatePasscodeInput').value.trim().toUpperCase();
+      if (input === REQUIRED_PASSCODE || input === "FORCE-8820") {
+        playHum(523, 'sine');
+        setTimeout(() => playHum(659, 'sine'), 100);
+        setTimeout(() => playHum(784, 'sine'), 200);
+        sessionStorage.setItem('lab02_unlocked', 'true');
+        document.getElementById('securityGateModal').classList.add('opacity-0', 'transition-opacity', 'duration-500');
+        setTimeout(() => {
+          document.getElementById('securityGateModal').classList.add('hidden');
+        }, 500);
+      } else {
+        playHum(180, 'sawtooth');
+        alert('❌ 密碼錯誤！請在 3D 展間尋找電荷裝置上的警語序列號。');
+      }
+    }
+
+    document.getElementById('gatePasscodeInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') verifyGatePasscode();
+    });
+
     const canvas = document.getElementById('coulombCanvas');
     const ctx = canvas.getContext('2d');
     let width, height;
@@ -184,7 +244,6 @@
       const dist = Math.hypot(dx, dy);
       const isRepel = (core.charge * mobile.charge) > 0;
 
-      // 連線
       ctx.beginPath();
       ctx.setLineDash([6, 6]);
       ctx.lineWidth = 3;
@@ -194,7 +253,6 @@
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // 核心
       ctx.save();
       ctx.shadowColor = core.charge > 0 ? '#f43f5e' : '#06b6d4';
       ctx.shadowBlur = 25;
@@ -213,7 +271,6 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(core.charge > 0 ? '+' : '−', core.x, core.y);
 
-      // 移動球
       ctx.save();
       ctx.shadowColor = mobile.charge > 0 ? '#f43f5e' : '#06b6d4';
       ctx.shadowBlur = 20;
@@ -232,7 +289,6 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(mobile.charge > 0 ? '+' : '−', mobile.x, mobile.y);
 
-      // 物理受力
       if (!mobile.isDragging) {
         if (isRepel && dist < 230) {
           mobile.x += (dx / dist) * 2.2;
